@@ -35,18 +35,45 @@ window.SimLab = (function () {
   // ─── Tooltip ───
   const tip = $('sim-tip');
 
+  // Mouse: follows the pointer while hovering.
+  // Touch: a tap shows it above the finger and it fades after a moment.
+  let tipTimer = null;
+
+  function placeTip(x, y, above) {
+    const left = Math.max(8, Math.min(x + 14, window.innerWidth - tip.offsetWidth - 8));
+    const top = above ? Math.max(8, y - tip.offsetHeight - 24) : y + 14;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+
+  function hideTip() {
+    clearTimeout(tipTimer);
+    tip.classList.remove('visible');
+  }
+
   function bindTip(el, textFn) {
-    el.addEventListener('mouseenter', () => {
+    el.addEventListener('pointerenter', e => {
+      if (e.pointerType !== 'mouse') return;
       tip.innerHTML = textFn();
       tip.classList.add('visible');
     });
-    el.addEventListener('mousemove', e => {
-      const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
-      tip.style.left = x + 'px';
-      tip.style.top = (e.clientY + 14) + 'px';
+    el.addEventListener('pointermove', e => {
+      if (e.pointerType === 'mouse') placeTip(e.clientX, e.clientY, false);
     });
-    el.addEventListener('mouseleave', () => tip.classList.remove('visible'));
+    el.addEventListener('pointerleave', e => {
+      if (e.pointerType === 'mouse') hideTip();
+    });
+    el.addEventListener('pointerup', e => {
+      if (e.pointerType === 'mouse') return;
+      tip.innerHTML = textFn();
+      tip.classList.add('visible');
+      placeTip(e.clientX, e.clientY, true);
+      clearTimeout(tipTimer);
+      tipTimer = setTimeout(hideTip, 2500);
+    });
   }
+
+  window.addEventListener('scroll', hideTip, { passive: true });
 
   // ═══════════════════════════════════════════════
   //   Fleet Probability Lab
@@ -267,6 +294,7 @@ window.SimLab = (function () {
     current?.classList.remove('active');
     $(id).classList.add('active');
     $(overlayScreens[id].btn).textContent = '← Back to game';
+    window.scrollTo(0, 0);
   }
 
   function hideOverlay(id) {
@@ -281,6 +309,7 @@ window.SimLab = (function () {
     const current = document.querySelector('.screen.active');
     if (overlayScreens[current?.id]) hideOverlay(current.id);
     (returnTo || $('setup-screen')).classList.add('active');
+    window.scrollTo(0, 0);
   }
 
   $('sim-mode').querySelectorAll('.seg-btn').forEach(btn => {

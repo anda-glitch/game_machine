@@ -71,6 +71,7 @@ function init() {
   gameState.botShips = [];
   gameState.currentShipIndex = -1;
   gameState.orientation = 'horizontal';
+  if ($('btn-rotate')) updateRotateButton();
   gameState.isPlayerTurn = true;
   gameState.phase = 'setup';
   gameState.playerShotCount = 0;
@@ -299,6 +300,7 @@ function startBattle() {
 
   setupScreen.classList.remove('active');
   battleScreen.classList.add('active');
+  window.scrollTo(0, 0);
 
   renderGrid(playerGrid, gameState.playerBoard, 'player');
   renderGrid(enemyGrid, gameState.playerShots, 'enemy');
@@ -890,15 +892,24 @@ function updateTurnIndicator(text) {
 }
 
 // ─── Event Listeners ───
-document.addEventListener('keydown', e => {
-  if (e.key === 'r' || e.key === 'R') {
-    gameState.orientation = gameState.orientation === 'horizontal' ? 'vertical' : 'horizontal';
-    // Immediately re-render ghost at current hover position
-    if (gameState.phase === 'setup' && gameState.hoverRow != null && gameState.currentShipIndex >= 0) {
-      showGhost(gameState.hoverRow, gameState.hoverCol);
-    }
+function toggleOrientation() {
+  gameState.orientation = gameState.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+  updateRotateButton();
+  // Immediately re-render ghost at current hover position
+  if (gameState.phase === 'setup' && gameState.hoverRow != null && gameState.currentShipIndex >= 0) {
+    showGhost(gameState.hoverRow, gameState.hoverCol);
   }
+}
+
+function updateRotateButton() {
+  $('btn-rotate').textContent = gameState.orientation === 'horizontal' ? '⟳ Horizontal' : '⟳ Vertical';
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.key === 'r' || e.key === 'R') && !e.target.closest?.('input, select, textarea')) toggleOrientation();
 });
+
+$('btn-rotate').addEventListener('click', toggleOrientation);
 
 btnRandom.addEventListener('click', () => {
   gameState.playerBoard = createBoard();

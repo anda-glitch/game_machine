@@ -83,6 +83,7 @@ body {
   justify-content: space-between;
   padding: 16px 32px;
   background: rgba(10, 14, 26, 0.85);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0, 212, 255, 0.1);
   position: sticky;
@@ -1685,4 +1686,229 @@ body {
   .vs-res-row { grid-template-columns: 1fr; }
   .vs-res-sub { grid-column: auto; }
   .vs-picker .sim-select { min-width: 0; width: 100%; }
+}
+
+/* ═══════════════════════════════════════════════
+   Mobile & Touch (Android + iOS)
+   ═══════════════════════════════════════════════ */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.app { min-height: 100dvh; }
+
+/* No double-tap zoom or 300ms delay on controls; no text selection or
+   long-press callout on the boards */
+button, select, input, .cell, .ex-bar, .seg-btn, .ship-btn {
+  touch-action: manipulation;
+}
+
+.grid, .ship-selector, .btn {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.header-tools {
+  display: flex;
+  gap: 10px;
+}
+
+/* Hover effects stick after a tap on touch screens, so only show them with a real pointer */
+@media (hover: none) {
+  .cell:hover::before {
+    background: linear-gradient(135deg, rgba(0, 100, 180, 0.08), rgba(0, 60, 120, 0.02));
+  }
+  .btn-primary:hover:not(:disabled),
+  .btn-secondary:hover {
+    transform: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .cell:active::before { background: rgba(0, 212, 255, 0.2); }
+}
+
+/* Notches, rounded corners and the home indicator */
+.header {
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-left: max(32px, env(safe-area-inset-left));
+  padding-right: max(32px, env(safe-area-inset-right));
+}
+
+.app { padding-bottom: env(safe-area-inset-bottom); }
+
+@media (max-width: 1000px) {
+  .header {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .status-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* Grid fills the width: 10 cells + gaps + padding + room for row numbers */
+  :root {
+    --cell-size: min(36px, calc((100vw - 74px) / 10));
+    --grid-gap: 1px;
+  }
+
+  .screen {
+    padding: 20px max(16px, env(safe-area-inset-left)) 28px max(16px, env(safe-area-inset-right));
+  }
+
+  /* Top-align and keep content inside the viewport (centered flex overflowed both sides) */
+  .screen.active {
+    align-items: flex-start;
+  }
+
+  .setup-content, .battle-content, .sim-content {
+    width: 100%;
+    min-width: 0;
+    gap: 20px;
+  }
+
+  .grid-container { padding-left: 16px; }
+  .grid-coords-y { left: -2px; }
+  .grid-coords-x { padding-left: 4px; }
+
+  /* Header: logo, status line, then three equal tool buttons */
+  .logo h1 { font-size: 18px; letter-spacing: 2px; }
+  .logo-icon { font-size: 22px; }
+
+  .status-bar {
+    width: 100%;
+    gap: 8px 16px;
+  }
+
+  .status-item {
+    font-size: 10px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .header-tools {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .header-tools .btn-small {
+    padding: 9px 4px;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+    min-height: 40px;
+  }
+
+  .section-title { font-size: 20px; letter-spacing: 1px; }
+  .section-sub { font-size: 13px; }
+
+  /* Setup */
+  .ship-selector { gap: 8px; }
+  .ship-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+  .ship-btn .ship-dot { width: 10px; height: 10px; }
+
+  .setup-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .setup-actions .btn,
+  .sim-controls .btn {
+    padding: 12px 10px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    min-height: 44px;
+  }
+
+  #btn-start { grid-column: 1 / -1; }
+
+  /* Battle: enemy waters first (that's where you tap), message, then your fleet */
+  .battle-grids {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .battle-grids > .grid-container:last-child { order: -2; }
+  .battle-grids > .battle-divider { order: -1; }
+  .battle-divider { width: 100%; }
+  .divider-text { width: auto; min-height: 28px; }
+
+  .fleet-status {
+    flex-direction: row;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .fleet-ship { font-size: 12px; gap: 6px; }
+
+  /* iOS zooms into any form field under 16px, so keep them at 16px */
+  select, .sim-select, input {
+    font-size: 16px;
+  }
+  .sim-select {
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0;
+    padding: 9px 10px;
+    min-height: 44px;
+  }
+
+  .sim-controls { gap: 8px; }
+  .seg-btn { padding: 10px 12px; min-height: 40px; }
+
+  /* Sim Lab */
+  .sim-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .sim-stat { padding: 10px 6px; }
+  .sim-stat .stat-value { font-size: 15px; }
+  .sim-panels { gap: 24px; width: 100%; }
+  .sim-grid .cell { font-size: 8px; }
+  .sim-grid .cell.ship { font-size: 10px; }
+  .heat-legend-bar { width: 120px; }
+  .sim-card { padding: 14px; }
+  .combo-grid { grid-template-columns: minmax(0, 1fr); }
+  .orient-row { grid-template-columns: 1fr; }
+  .orient-name { grid-row: auto; }
+
+  /* How It Works */
+  .explain-loop { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .explain-loop li { padding: 10px 12px; }
+  .ex-story ol { font-size: 13px; padding-left: 18px; }
+  .ex-chart { height: 100px; gap: 1px; }
+  .ex-slider { height: 32px; }
+
+  /* Bot vs Bot */
+  .vs-pickers { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
+  .vs-picker .sim-select { width: 100%; min-width: 0; }
+  .vs-vs { text-align: center; padding: 0; font-size: 14px; }
+  .vs-score { font-size: 13px; }
+  .vs-score b { font-size: 20px; }
+  .vs-res-row { grid-template-columns: 1fr; }
+  .vs-res-sub { grid-column: auto; }
+  .vs-banner { font-size: 14px; }
+
+  /* Game-over modal */
+  .modal { padding: 28px 20px; }
+  .modal-stats { gap: 16px; }
+}
+
+/* Very narrow phones (≤ 340px, e.g. iPhone SE 1st gen, small Androids) */
+@media (max-width: 340px) {
+  .header-tools .btn-small { font-size: 8px; }
+  .logo h1 { font-size: 16px; }
 }
