@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Probability Minesweeper</title>
+  <meta name="description" content="Minesweeper that computes the exact probability of a mine under every cell, with a solver bot and a statistics lab." />
+  <meta name="theme-color" content="#0a0e1a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mine Odds" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <a class="home-link" href="../" aria-label="All games">← Games</a>
+      <div class="logo">
+        <span class="logo-icon">💣</span>
+        <h1>MINE <span class="accent">ODDS</span></h1>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="play" role="tab" aria-selected="true">🎮 Play</button>
+        <button class="tab" data-tab="lab" role="tab" aria-selected="false">📊 Lab</button>
+      </nav>
+    </header>
+
+    <!-- ═══ Play ═══ -->
+    <main class="panel active" id="panel-play">
+      <div class="seg" id="difficulty">
+        <button class="seg-btn active" data-level="beginner">Beginner</button>
+        <button class="seg-btn" data-level="intermediate">Intermediate</button>
+        <button class="seg-btn" data-level="expert">Expert</button>
+      </div>
+
+      <div class="status-row">
+        <div class="counter" title="Mines left (mines − flags)">💣 <span id="mines-left">10</span></div>
+        <button class="face" id="btn-new" aria-label="New game">🙂</button>
+        <div class="counter" title="Time">⏱ <span id="timer">0</span></div>
+      </div>
+
+      <div class="toolbar">
+        <button class="tool" id="btn-mode" aria-pressed="false">⛏ Dig</button>
+        <button class="tool" id="btn-odds" aria-pressed="false">🎯 Odds: Off</button>
+        <button class="tool" id="btn-hint">💡 Hint</button>
+        <button class="tool" id="btn-bot">🤖 Bot Move</button>
+        <button class="tool" id="btn-auto">▶ Auto-play</button>
+      </div>
+
+      <div class="board-wrap" id="board-wrap">
+        <div class="board" id="board"></div>
+      </div>
+      <p class="controls-hint" id="controls-hint"></p>
+
+      <section class="cards">
+        <div class="card">
+          <h3>Odds right now</h3>
+          <div class="stat-grid" id="odds-stats"></div>
+          <p class="card-note" id="odds-note"></p>
+        </div>
+
+        <div class="card">
+          <h3>Your clicks <span class="card-sub">The risk of every square you opened, at the moment you opened it</span></h3>
+          <div class="risk-chart" id="risk-chart"></div>
+          <div class="legend">
+            <span><i class="lg lg-safe"></i>certain safe</span>
+            <span><i class="lg lg-guess"></i>guess</span>
+            <span><i class="lg lg-wasted"></i>needless risk (a safe square existed)</span>
+            <span><i class="lg lg-boom"></i>exploded</span>
+          </div>
+          <p class="card-note" id="luck-note"></p>
+        </div>
+
+        <div class="card card-wide">
+          <h3>How the odds are computed</h3>
+          <ol class="how" id="how-steps">
+            <li><b>Read the numbers.</b> Each revealed number says how many mines sit among its hidden neighbours.</li>
+            <li><b>Plain logic first.</b> A number whose mines are all accounted for makes its other neighbours safe; a number with exactly as many hidden neighbours as mines makes them all mines. Comparing overlapping numbers (the subset rule) settles more.</li>
+            <li><b>Count every layout.</b> The remaining frontier squares split into independent groups. For each group the solver lists <em>every</em> mine arrangement that satisfies all its numbers.</li>
+            <li><b>Weight by the rest of the board.</b> An arrangement using m mines leaves the other mines to fall anywhere in the unexplored area, which they can do in C(U, M − m) ways. Arrangements that leave a "likely" number of mines for the open sea count for more.</li>
+            <li><b>Probability = share of weighted layouts</b> with a mine on that square. These are exact; a brute-force check agrees to 15 decimal places.</li>
+          </ol>
+          <p class="card-note" id="how-live"></p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ═══ Lab ═══ -->
+    <main class="panel" id="panel-lab">
+      <h2 class="section-title">Statistics Lab</h2>
+      <p class="section-sub">
+        The solver bot always opens a certain-safe square when one exists and otherwise takes the lowest-risk guess.
+        Let it play thousands of games to see how winnable Minesweeper really is, and whether its probabilities are honest.
+      </p>
+
+      <div class="card">
+        <h3>1 · Bot tournament <span class="card-sub">Win rate with a 95% confidence interval</span></h3>
+        <div class="lab-controls">
+          <select class="select" id="lab-level" aria-label="Difficulty">
+            <option value="beginner">Beginner 9×9 · 10 mines</option>
+            <option value="intermediate" selected>Intermediate 16×16 · 40 mines</option>
+            <option value="expert">Expert 16×30 · 99 mines</option>
+          </select>
+          <select class="select" id="lab-games" aria-label="Number of games">
+            <option value="200">200 games</option>
+            <option value="1000" selected>1,000 games</option>
+            <option value="5000">5,000 games</option>
+          </select>
+          <button class="btn btn-primary" id="lab-run">▶ Run</button>
+        </div>
+        <div class="progress"><div class="progress-fill" id="lab-progress"></div></div>
+        <div class="stat-grid" id="lab-stats"></div>
+        <h4 class="chart-title">Guesses needed per game <span class="card-sub">Share of games by number of guesses; hover or tap a bar to see how many of them the bot won</span></h4>
+        <div class="bars" id="lab-guess-chart"></div>
+      </div>
+
+      <div class="card">
+        <h3>2 · Are the probabilities honest? <span class="card-sub">Calibration: every guess the bot made in the tournament, grouped by predicted risk</span></h3>
+        <div class="chart" id="lab-calibration"></div>
+        <p class="card-note" id="lab-calibration-note">Run a tournament above to fill this in. If the solver is right, guesses it rated 30% risky should explode about 30% of the time, so points sit on the dashed diagonal.</p>
+      </div>
+
+      <div class="card">
+        <h3>3 · Win rate vs mine density <span class="card-sub">9×9 board, 300 games per point; the band is the 95% confidence interval</span></h3>
+        <div class="lab-controls">
+          <button class="btn btn-primary" id="sweep-run">▶ Run density sweep</button>
+        </div>
+        <div class="progress"><div class="progress-fill" id="sweep-progress"></div></div>
+        <div class="chart" id="lab-sweep"></div>
+        <p class="card-note" id="sweep-note"></p>
+      </div>
+    </main>
+
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal">
+        <div class="modal-icon" id="end-icon">🏆</div>
+        <h2 id="end-title">Cleared!</h2>
+        <p id="end-message"></p>
+        <div class="modal-stats" id="end-stats"></div>
+        <button class="btn btn-primary" id="btn-again">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip" id="tip" role="tooltip"></div>
+
+  <script src="engine.js"></script>
+  <script src="game.js"></script>
+  <script src="lab.js"></script>
+</body>
+</html>

@@ -3,373 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Game Machine</title>
+  <meta name="description" content="Probability games: Sink the Ship and Probability Minesweeper." />
   <meta name="theme-color" content="#0a0e1a" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Sink the Ship" />
-  <meta name="format-detection" content="telephone=no" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-  <title>Sink the Ship — Naval Battle</title>
-  <meta name="description" content="A premium Battleship game with intelligent AI opponent. Place your fleet and sink the enemy ships!" />
+  <link rel="icon" type="image/png" href="sink-the-ship/icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0e1a; --card: #1a2236; --hover: #243049;
+      --accent: #00d4ff; --accent-bright: #4ef0ff;
+      --text: #e8ecf1; --dim: #8899aa;
+    }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--text);
+      background: radial-gradient(ellipse at top, #0f2038 0%, var(--bg) 60%) fixed, var(--bg);
+      display: flex; flex-direction: column; align-items: center;
+      padding: max(48px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      -webkit-tap-highlight-color: transparent;
+    }
+    h1 {
+      font-family: 'Orbitron', monospace; font-size: clamp(24px, 6vw, 36px); letter-spacing: 3px; text-align: center;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .sub { margin: 10px 0 36px; color: var(--dim); text-align: center; font-size: 15px; }
+    .games { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; width: 100%; max-width: 760px; }
+    a.game {
+      display: flex; flex-direction: column; gap: 12px; padding: 22px;
+      background: var(--card); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px;
+      color: inherit; text-decoration: none; transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    }
+    a.game:hover { transform: translateY(-3px); border-color: var(--accent); background: var(--hover); }
+    a.game img { width: 64px; height: 64px; border-radius: 14px; }
+    a.game h2 { font-family: 'Orbitron', monospace; font-size: 17px; letter-spacing: 1.5px; }
+    a.game p { color: var(--dim); font-size: 14px; line-height: 1.55; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+    .tags span { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(0, 212, 255, 0.1); color: var(--accent); }
+    footer { margin-top: 40px; font-size: 12px; color: var(--dim); }
+    footer a { color: var(--dim); }
+  </style>
 </head>
 <body>
-  <canvas id="bg-canvas"></canvas>
+  <h1>GAME MACHINE</h1>
+  <p class="sub">Games where probability is the strategy.</p>
 
-  <div class="app">
-    <!-- Header -->
-    <header class="header">
-      <div class="logo">
-        <span class="logo-icon">⚓</span>
-        <h1>SINK <span class="accent">THE</span> SHIP</h1>
-      </div>
-      <div class="status-bar">
-        <div class="status-item" id="turn-indicator">
-          <span class="dot"></span>
-          <span class="label">SETUP PHASE</span>
-        </div>
-        <div class="status-item" id="score-display">
-          <span class="label">YOU <span id="player-score">0</span> — <span id="bot-score">0</span> BOT</span>
-        </div>
-        <div class="header-tools">
-          <button class="btn btn-secondary btn-small" id="btn-sim-lab">🔬 Sim Lab</button>
-          <button class="btn btn-secondary btn-small" id="btn-explain">📖 How It Works</button>
-          <button class="btn btn-secondary btn-small" id="btn-versus">🤖 Bot vs Bot</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Setup Screen -->
-    <section id="setup-screen" class="screen active">
-      <div class="setup-content">
-        <h2 class="section-title">Deploy Your Fleet</h2>
-        <p class="section-sub">Pick a ship below, then tap or click your grid to place it. Use <b>Rotate</b> or press <kbd>R</kbd> to turn it.</p>
-
-        <div class="ship-selector" id="ship-selector">
-          <!-- Ships populated by JS -->
-        </div>
-
-        <div class="grid-container setup-grid-container">
-          <div class="grid-label">YOUR WATERS</div>
-          <div class="grid" id="setup-grid"></div>
-          <div class="grid-coords-x" id="setup-coords-x"></div>
-          <div class="grid-coords-y" id="setup-coords-y"></div>
-        </div>
-
-        <div class="setup-actions">
-          <button class="btn btn-secondary" id="btn-rotate" aria-label="Rotate ship">⟳ Horizontal</button>
-          <button class="btn btn-secondary" id="btn-random">🎲 Random</button>
-          <button class="btn btn-secondary" id="btn-reset">↻ Reset</button>
-          <button class="btn btn-primary" id="btn-start" disabled>⚔️ Battle!</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Battle Screen -->
-    <section id="battle-screen" class="screen">
-      <div class="battle-content">
-        <div class="battle-grids">
-          <div class="grid-container">
-            <div class="grid-label">YOUR WATERS</div>
-            <div class="grid" id="player-grid"></div>
-            <div class="grid-coords-x" id="player-coords-x"></div>
-            <div class="grid-coords-y" id="player-coords-y"></div>
-          </div>
-
-          <div class="battle-divider">
-            <div class="divider-line"></div>
-            <div class="divider-text" id="battle-message">YOUR TURN — FIRE!</div>
-            <div class="divider-line"></div>
-          </div>
-
-          <div class="grid-container">
-            <div class="grid-label">ENEMY WATERS</div>
-            <div class="grid" id="enemy-grid"></div>
-            <div class="grid-coords-x" id="enemy-coords-x"></div>
-            <div class="grid-coords-y" id="enemy-coords-y"></div>
-          </div>
-        </div>
-
-        <div class="heat-toggle-row">
-          <button class="btn btn-secondary btn-small" id="btn-heat-toggle" aria-pressed="false">🔥 Enemy Heatmap: Off</button>
-          <span class="heat-status" id="heat-status"></span>
-        </div>
-
-        <div class="fleet-status">
-          <div class="fleet-panel">
-            <h3>Your Fleet</h3>
-            <div id="player-fleet-status"></div>
-          </div>
-          <div class="fleet-panel">
-            <h3>Enemy Fleet</h3>
-            <div id="enemy-fleet-status"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Simulation Lab Screen -->
-    <section id="sim-screen" class="screen">
-      <div class="sim-content">
-        <h2 class="section-title">Fleet Probability Lab</h2>
-        <p class="section-sub">
-          Samples legal layouts of all 5 ships across every position and all 2<sup>5</sup> = 32 orientation combinations.
-          <strong>Monte Carlo</strong> draws each ship independently and throws away overlapping fleets.
-          <strong>Markov Chain</strong> (Metropolis) moves one ship at a time and records every state the chain visits.
-          Both converge to the same uniform distribution over legal fleets.
-        </p>
-
-        <div class="sim-controls">
-          <div class="seg" id="sim-mode">
-            <button class="seg-btn active" data-mode="mc">🎲 Monte Carlo</button>
-            <button class="seg-btn" data-mode="mcmc">🔗 Markov Chain</button>
-          </div>
-          <select class="sim-select" id="sim-target" aria-label="Number of samples">
-            <option value="10000">10K samples</option>
-            <option value="100000">100K samples</option>
-            <option value="1000000" selected>1M samples</option>
-            <option value="5000000">5M samples</option>
-          </select>
-          <button class="btn btn-primary" id="sim-run">▶ Run</button>
-          <button class="btn btn-secondary" id="sim-reset">↻ Reset</button>
-        </div>
-
-        <div class="sim-stats">
-          <div class="sim-stat"><span class="stat-value" id="sim-samples">0</span><span class="stat-label">Samples</span></div>
-          <div class="sim-stat"><span class="stat-value" id="sim-accept">—</span><span class="stat-label" id="sim-accept-label">Acceptance</span></div>
-          <div class="sim-stat"><span class="stat-value" id="sim-total">—</span><span class="stat-label">Est. legal fleets</span></div>
-          <div class="sim-stat"><span class="stat-value" id="sim-sum">—</span><span class="stat-label">Σ P(cell) · expect 17</span></div>
-        </div>
-
-        <div class="sim-panels">
-          <div class="grid-container">
-            <div class="grid-label">OCCUPANCY HEATMAP</div>
-            <div class="grid sim-grid" id="sim-heat"></div>
-            <div class="grid-coords-x" id="sim-heat-coords-x"></div>
-            <div class="grid-coords-y" id="sim-heat-coords-y"></div>
-            <div class="heat-legend">
-              <span id="sim-legend-min">0%</span>
-              <div class="heat-legend-bar"></div>
-              <span id="sim-legend-max">—</span>
-            </div>
-          </div>
-          <div class="grid-container">
-            <div class="grid-label" id="sim-live-label">CURRENT SAMPLE</div>
-            <div class="grid sim-grid" id="sim-live"></div>
-            <div class="grid-coords-x" id="sim-live-coords-x"></div>
-            <div class="grid-coords-y" id="sim-live-coords-y"></div>
-            <div class="sim-key" id="sim-key"></div>
-          </div>
-        </div>
-
-        <div class="sim-charts">
-          <div class="sim-card">
-            <h3>Orientation per ship</h3>
-            <div id="sim-orient"></div>
-          </div>
-          <div class="sim-card sim-card-wide">
-            <h3>All 32 orientation combinations <span class="sim-card-sub">grouped by # vertical ships · dashed line = 1/32</span></h3>
-            <div class="combo-grid" id="sim-combos"></div>
-          </div>
-        </div>
-
-        <button class="btn btn-secondary" id="sim-back">← Back to game</button>
-      </div>
-    </section>
-
-    <!-- How It Works Screen -->
-    <section id="explain-screen" class="screen">
-      <div class="sim-content">
-        <h2 class="section-title">How the Bot Thinks</h2>
-        <p class="section-sub">
-          A replay of the bot hunting a hidden fleet, one shot at a time, using the exact code it runs against you.
-          Before every shot it repeats the same four steps.
-        </p>
-
-        <ol class="explain-loop">
-          <li><b>1 · Enumerate</b><span>Try every remaining ship at every start cell in both orientations. Throw out placements that touch a miss or a sunk ship.</span></li>
-          <li><b>2 · Score</b><span>Each open cell scores the number of surviving placements covering it. If a ship is wounded, only placements through the hits count, weighted heavily.</span></li>
-          <li><b>3 · Restrict</b><span>While hunting, only cells on a checkerboard spaced by the smallest ship afloat are allowed. The gap widens as small ships sink.</span></li>
-          <li><b>4 · Fire &amp; update</b><span>Shoot the highest-scoring allowed cell. The result (miss, hit or sunk) changes which placements survive next turn.</span></li>
-        </ol>
-
-        <div class="sim-controls">
-          <button class="btn btn-secondary btn-small" id="ex-first" aria-label="First shot">⏮</button>
-          <button class="btn btn-secondary btn-small" id="ex-prev">◀ Prev</button>
-          <button class="btn btn-primary" id="ex-play">▶ Play</button>
-          <button class="btn btn-secondary btn-small" id="ex-next">Next ▶</button>
-          <button class="btn btn-secondary btn-small" id="ex-last" aria-label="Last shot">⏭</button>
-          <button class="btn btn-secondary btn-small" id="ex-new">🎲 New fleet</button>
-        </div>
-        <input type="range" class="ex-slider" id="ex-slider" min="0" max="0" value="0" aria-label="Shot number" />
-
-        <div class="sim-panels">
-          <div class="grid-container">
-            <div class="grid-label">BOT'S VIEW · SCORES BEFORE THE SHOT</div>
-            <div class="grid sim-grid" id="ex-scores"></div>
-            <div class="grid-coords-x" id="ex-scores-coords-x"></div>
-            <div class="grid-coords-y" id="ex-scores-coords-y"></div>
-            <div class="ex-legend">
-              <span><i class="lg lg-heat"></i>score (low → high)</span>
-              <span><i class="lg lg-cand"></i>allowed cell</span>
-              <span><i class="lg lg-pick"></i>chosen shot</span>
-            </div>
-          </div>
-          <div class="grid-container">
-            <div class="grid-label">HIDDEN FLEET · AFTER THE SHOT</div>
-            <div class="grid sim-grid" id="ex-truth"></div>
-            <div class="grid-coords-x" id="ex-truth-coords-x"></div>
-            <div class="grid-coords-y" id="ex-truth-coords-y"></div>
-            <div class="ex-legend">
-              <span><i class="lg lg-ship"></i>ship (hidden from bot)</span>
-              <span><i class="lg lg-hit"></i>hit</span>
-              <span><i class="lg lg-miss"></i>miss</span>
-              <span><i class="lg lg-sunk"></i>sunk</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="sim-card ex-story">
-          <h3 id="ex-title">Shot 1</h3>
-          <ol id="ex-steps"></ol>
-        </div>
-
-        <div class="sim-card ex-chart-card">
-          <h3>Placements still possible after each shot <span class="sim-card-sub">Each bar is one shot. Misses trim placements a little; sinking a ship removes all of that ship's placements. Click a bar to jump to that shot.</span></h3>
-          <div class="ex-chart" id="ex-chart"></div>
-          <div class="ex-legend">
-            <span><i class="lg lg-bar-miss"></i>miss</span>
-            <span><i class="lg lg-bar-hit"></i>hit</span>
-            <span><i class="lg lg-bar-sunk"></i>sunk a ship</span>
-          </div>
-        </div>
-
-        <div class="sim-card">
-          <h3>Two different engines</h3>
-          <p class="ex-note">
-            <b>The bot</b> (this replay) uses <em>exact counting</em>. It scores each ship's placements separately, recomputes them from scratch every turn, and needs no randomness.
-            <b>The 🔥 Enemy Heatmap</b> in battle and the <b>🔬 Sim Lab</b> use <em>sampling</em>. A Markov chain moves whole 5-ship fleets around, keeping only fleets with no overlaps that cover every unsunk hit and avoid every miss and sunk cell.
-            After each of your shots it throws its samples away and re-runs the chain with the new evidence.
-          </p>
-        </div>
-
-        <button class="btn btn-secondary" id="ex-back">← Back to game</button>
-      </div>
-    </section>
-
-    <!-- Bot vs Bot Screen -->
-    <section id="versus-screen" class="screen">
-      <div class="sim-content">
-        <h2 class="section-title">Bot vs Bot</h2>
-        <p class="section-sub">
-          Pick two strategies and let them fight. They take turns firing at each other's fleet, and the first to sink all 5 ships wins.
-          With <b>same fleet</b> on, both bots hunt an identical layout, so only the strategy decides the match. The first shot alternates between matches.
-        </p>
-
-        <div class="vs-pickers">
-          <label class="vs-picker a">
-            <span>Bot A</span>
-            <select class="sim-select" id="vs-bot-a"></select>
-          </label>
-          <span class="vs-vs">VS</span>
-          <label class="vs-picker b">
-            <span>Bot B</span>
-            <select class="sim-select" id="vs-bot-b"></select>
-          </label>
-        </div>
-
-        <div class="sim-controls">
-          <button class="btn btn-primary" id="vs-play">▶ Start Match</button>
-          <button class="btn btn-secondary btn-small" id="vs-new">↻ New Match</button>
-          <select class="sim-select" id="vs-speed" aria-label="Speed">
-            <option value="700">Slow</option>
-            <option value="250" selected>Normal</option>
-            <option value="60">Fast</option>
-          </select>
-          <label class="vs-check"><input type="checkbox" id="vs-mirror" checked /> Same fleet</label>
-        </div>
-
-        <div class="vs-score" id="vs-score"></div>
-
-        <div class="sim-panels">
-          <div class="grid-container">
-            <div class="grid-label" id="vs-label-a">BOT A FIRES HERE</div>
-            <div class="grid sim-grid vs-grid" id="vs-grid-a"></div>
-            <div class="grid-coords-x" id="vs-grid-a-coords-x"></div>
-            <div class="grid-coords-y" id="vs-grid-a-coords-y"></div>
-            <div class="vs-stats" id="vs-stats-a"></div>
-          </div>
-          <div class="grid-container">
-            <div class="grid-label" id="vs-label-b">BOT B FIRES HERE</div>
-            <div class="grid sim-grid vs-grid" id="vs-grid-b"></div>
-            <div class="grid-coords-x" id="vs-grid-b-coords-x"></div>
-            <div class="grid-coords-y" id="vs-grid-b-coords-y"></div>
-            <div class="vs-stats" id="vs-stats-b"></div>
-          </div>
-        </div>
-
-        <div class="vs-banner" id="vs-banner"></div>
-
-        <div class="sim-card vs-tourney">
-          <h3>Tournament <span class="sim-card-sub">Plays many matches instantly with no animation, alternating who shoots first. A single match is mostly luck; a tournament shows which strategy is really stronger.</span></h3>
-          <div class="sim-controls">
-            <select class="sim-select" id="vs-count" aria-label="Number of matches">
-              <option value="50">50 matches</option>
-              <option value="200" selected>200 matches</option>
-              <option value="1000">1,000 matches</option>
-            </select>
-            <button class="btn btn-primary" id="vs-tourney-run">🏆 Run Tournament</button>
-          </div>
-          <div class="vs-progress"><div class="vs-progress-fill" id="vs-progress"></div></div>
-          <div id="vs-results"></div>
-        </div>
-
-        <div class="sim-card">
-          <h3>The contenders</h3>
-          <ul class="vs-roster" id="vs-roster"></ul>
-        </div>
-
-        <button class="btn btn-secondary" id="vs-back">← Back to game</button>
-      </div>
-    </section>
-
-    <div class="sim-tip" id="sim-tip" role="tooltip"></div>
-
-    <!-- Game Over Modal -->
-    <div class="modal-overlay" id="game-over-modal">
-      <div class="modal">
-        <div class="modal-icon" id="modal-icon">🏆</div>
-        <h2 id="modal-title">Victory!</h2>
-        <p id="modal-message">You sank all enemy ships!</p>
-        <div class="modal-stats">
-          <div class="stat">
-            <span class="stat-value" id="stat-shots">0</span>
-            <span class="stat-label">Shots Fired</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value" id="stat-accuracy">0%</span>
-            <span class="stat-label">Accuracy</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value" id="stat-sunk">0</span>
-            <span class="stat-label">Ships Sunk</span>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="btn-play-again">⚓ Play Again</button>
-      </div>
-    </div>
+  <div class="games">
+    <a class="game" href="sink-the-ship/">
+      <img src="sink-the-ship/icons/icon-192.png" alt="" />
+      <h2>Sink the Ship</h2>
+      <p>Battleship against a bot that counts every possible ship placement. Includes a Monte Carlo / Markov chain lab, a shot-by-shot replay of its reasoning, and bot-vs-bot tournaments.</p>
+      <div class="tags"><span>Monte Carlo</span><span>Markov chains</span><span>Heatmaps</span></div>
+    </a>
+    <a class="game" href="minesweeper/">
+      <img src="minesweeper/icons/icon-192.png" alt="" />
+      <h2>Probability Minesweeper</h2>
+      <p>Minesweeper that knows the exact chance of a mine under every square. Get hints, watch the solver bot, and test whether its probabilities are calibrated over thousands of games.</p>
+      <div class="tags"><span>Exact inference</span><span>Calibration</span><span>Confidence intervals</span></div>
+    </a>
   </div>
 
-  <script src="sim.js"></script>
-  <script src="game.js"></script>
-  <script src="simlab.js"></script>
-  <script src="explain.js"></script>
-  <script src="versus.js"></script>
+  <footer><a href="https://github.com/anda-glitch/game_machine">Source on GitHub</a></footer>
 </body>
 </html>
